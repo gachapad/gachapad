@@ -188,7 +188,8 @@ export async function refreshCoins({ force = false } = {}) {
         vaultLamports: v ? v.vaultLamports.toString() : prev.vaultLamports || '0',
         // the curve's un-swept creator fee (pump.fun v3 trades) is pending too: the crank sweeps it into the vault
         curveFeeLamports: f?.curveFeeLamports ?? prev.curveFeeLamports ?? '0',
-        pendingLamports: v ? (v.total + BigInt(f?.curveFeeLamports ?? prev.curveFeeLamports ?? '0')).toString() : prev.pendingLamports || '0',
+        poolFeeLamports: graduated ? (amm?.poolFeeLamports ?? prev.poolFeeLamports ?? '0') : '0',
+        pendingLamports: v ? (v.total + BigInt(f?.curveFeeLamports ?? prev.curveFeeLamports ?? '0') + (graduated ? BigInt(amm?.poolFeeLamports ?? prev.poolFeeLamports ?? '0') : 0n)).toString() : prev.pendingLamports || '0',
         ammVaultLamports: v ? v.amm.toString() : prev.ammVaultLamports || '0', ammAtaExists: v ? v.ammAtaExists : !!prev.ammAtaExists,
         poolLamports: (poolBalances.get(c.holderPool) ?? BigInt(prev.poolLamports || 0)).toString(),
         vol24hUsd: d?.vol24hUsd ?? prev.vol24hUsd ?? 0, vol1hUsd: d?.vol1hUsd ?? prev.vol1hUsd ?? 0, trades24h: d?.trades24h ?? prev.trades24h ?? 0,

@@ -72,7 +72,7 @@ The cards are Collector Crypt cards. Each is an NFT backed by a real graded slab
   - It is only ever rebroadcast with the same bytes.
   - It is marked "not landed" only on finalized proof.
 - **Simulation.** Swaps and pack purchases are simulated and checked against an allowlist before they are signed.
-- **Tests.** `test.js` (498 checks), `test-packs.js`, `test-freeze.mjs`, `test-pulls.mjs`, and `test-pull-flow.mjs`, which plays the full pull flow against a fake chain, including replay, lapse, lagging-RPC, crash-resume and failed-burn cases.
+- **Tests.** `test.js` (502 checks), `test-packs.js`, `test-freeze.mjs`, `test-pulls.mjs`, and `test-pull-flow.mjs`, which plays the full pull flow against a fake chain, including replay, lapse, lagging-RPC, crash-resume and failed-burn cases.
 - **Adversarial review.** An adversarial review of the pull money path found one critical, two high and three medium issues. All are fixed and covered by `test-pull-flow.mjs`.
 
 ## Layout

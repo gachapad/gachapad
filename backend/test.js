@@ -2154,6 +2154,30 @@ await block('R5 pump.fun creator-fee bucket (2026-10): sweep_creator_fee goes fi
   check('R5 the fee index books the whole 25M of a sweep + distribute crank', led.distributedLamports === '25000000' && led.toParentLamports === '10000000' && led.cranks === 1, JSON.stringify(led))
 })
 
+await block('R6 pump-amm pool creator-fee bucket (graduated coins): pool sweep first, bucket not priced as reserve', async () => {
+  const c = use(fakeConn())
+  const kid = addCoin({ symbol: 'PSWEEP', parent: registry.rootMint() })
+  const m = new PublicKey(kid.mint)
+  const data = Buffer.alloc(300); data.writeBigUInt64LE(777n, pump.POOL_PROTOCOL_FEES_AT); data.writeBigUInt64LE(4242n, pump.POOL_CREATOR_FEES_AT)
+  const bk = pump.poolFeeBuckets(data)
+  check('R6 the pool buckets are read at their IDL offsets (protocol 271, creator 279); older pools read 0', bk.protocol === 777n && bk.creator === 4242n && pump.poolFeeBuckets(Buffer.alloc(279)).creator === 0n && pump.poolFeeBuckets(null).creator === 0n)
+  const cfg = pump.feeSharingConfigPda(m), payer = Keypair.generate().publicKey, poolQuote = Keypair.generate().publicKey
+  const sw = pump.sweepPoolCreatorFeeIx({ payer, mint: kid.mint, coinCreator: cfg, poolQuote })
+  const { ammVaultAta } = pump.vaultAccounts(cfg)
+  check('R6 pump-amm sweep_creator_fee: amm program, same discriminator, 12 accounts, payer signs, pool + quote + recipient ATA writable', sw.programId.equals(pump.PUMP_AMM_PROGRAM_ID) && sw.data.equals(pump.SWEEP_CREATOR_FEE_DISC) && sw.keys.length === 12 && sw.keys[0].isSigner && sw.keys[2].pubkey.equals(pump.canonicalPumpPoolPda(m)) && sw.keys[2].isWritable && sw.keys[5].pubkey.equals(poolQuote) && sw.keys[5].isWritable && sw.keys[7].pubkey.equals(ammVaultAta) && sw.keys[7].isWritable)
+  // a graduated crank: the pool sweep took 3M out of the pool quote account; the pump vault's net drop is 20M
+  const sharingConfig = { shareholders: kid.shares.map(s => ({ address: new PublicKey(s.address), shareBps: s.shareBps })) }
+  const dix = await pump.PUMP_SDK.distributeCreatorFees({ mint: m, sharingConfig, sharingConfigAddress: cfg })
+  const msg = new TransactionMessage({ payerKey: payer, recentBlockhash: bs58.encode(randomBytes(32)), instructions: [sw, dix] }).compileToV0Message()
+  const deltas = new Map([[kid.shares[0].address, 9_200_000], [kid.shares[1].address, 9_200_000], [B, 2_300_000], [P, 2_300_000], [pump.creatorVaultPda(cfg).toBase58(), -20_000_000], [poolQuote.toBase58(), -3_000_000]])
+  const keys = msg.staticAccountKeys.map(k => k.toBase58())
+  const pre = keys.map(() => 100_000_000), post = keys.map((k, i) => 100_000_000 + (deltas.get(k) || 0) - (i === 0 ? 5000 : 0))
+  const tx = { meta: { err: null, fee: 5000, preBalances: pre, postBalances: post, loadedAddresses: { writable: [], readonly: [] }, innerInstructions: [] }, transaction: { message: msg } }
+  check('R6 poolSweepQuoteOf names the swept pool quote account of this coin only', dist.poolSweepQuoteOf(tx, kid.mint) === poolQuote.toBase58() && dist.poolSweepQuoteOf(tx, Keypair.generate().publicKey.toBase58()) === null)
+  check('R6 the drop includes what the pool sweep took out of the pool (23M, not the vault\'s net 20M)', dist.vaultDropOf(tx, kid.mint) === 23_000_000n, String(dist.vaultDropOf(tx, kid.mint)))
+  void c
+})
+
 await block('R3#6 the fee index reads version-1 transactions instead of skipping them', async () => {
   const c = use(fakeConn())
   const kid = addCoin({ symbol: 'IDXT1', parent: registry.rootMint() })

@@ -22,11 +22,12 @@ const {
 const {
   coinCreatorVaultAuthorityPda, coinCreatorVaultAtaPda, OnlinePumpAmmSdk, PUMP_AMM_SDK, buyQuoteInput, sellBaseInput,
   computeFeesBps: ammComputeFeesBps, GLOBAL_CONFIG_PDA: AMM_GLOBAL_CONFIG_PDA, PUMP_AMM_FEE_CONFIG_PDA,
+  PUMP_AMM_PROGRAM_ID, PUMP_AMM_EVENT_AUTHORITY_PDA,
 } = require('@pump-fun/pump-swap-sdk')
 
 export const PUMP_ALT_MAINNET = '7mFD2mUtRS65XstiSAvCJuYmdesZoQwCwRJhq1p3eRMe' // pump.fun frontend's lookup table (create+buy size)
 export const TARGET_SOL = 85.005 // real SOL in a completed curve (Global: 793.1M tokens sold from 30 SOL / 1.073B virtual)
-export { PUMP_SDK, feeSharingConfigPda, creatorVaultPda, bondingCurvePda, canonicalPumpPoolPda, PUMP_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, NATIVE_MINT }
+export { PUMP_SDK, feeSharingConfigPda, creatorVaultPda, bondingCurvePda, canonicalPumpPoolPda, PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, NATIVE_MINT }
 
 let _online = null, _onlineAmm = null
 export function online() { if (!_online) _online = new OnlinePumpSdk(getConnection()); return _online }
@@ -191,7 +192,12 @@ export async function readAmmPools(mints, quoteOf = new Map()) {
     const p = decoded[i]
     if (!p) { out.set(m, null); return }
     const bInfo = vInfos[k++], qInfo = vInfos[k++]
-    const baseRaw = bInfo ? u64At(bInfo.data, 64) : 0n, quoteLamports = qInfo ? u64At(qInfo.data, 64) : 0n
+    const baseRaw = bInfo ? u64At(bInfo.data, 64) : 0n
+    // pump-amm (2026-10) keeps the protocol + creator fee buckets IN the pool's quote account until swept: they are
+    // not reserves (pricing with them would overstate the price — a cheaper pull in tokens)
+    const buckets = poolFeeBuckets(infos[i].data)
+    const quoteAccount = qInfo ? u64At(qInfo.data, 64) : 0n
+    const quoteLamports = quoteAccount > buckets.protocol + buckets.creator ? quoteAccount - buckets.protocol - buckets.creator : 0n
     const virtualQuote = BigInt(p.virtualQuoteReserves?.toString?.() || '0')
     // SOL pools: lamports per raw token /1e3 = SOL per token; token-quoted pools: quote per token here, SOL after the loop
     const qd = isToken(m) ? (QUOTE_DECIMALS.get(quoteOf.get(m)) ?? 6) : 9
@@ -203,7 +209,7 @@ export async function readAmmPools(mints, quoteOf = new Map()) {
         creatorFeeBps = Number(f.creatorFeeBps.toString())
       }
     } catch {}
-    out.set(m, { pool: pools[i].toBase58(), coinCreator: p.coinCreator.toBase58(), baseRaw: baseRaw.toString(), quoteLamports: quoteLamports.toString(), virtualQuote: virtualQuote.toString(), priceSol, mcapSol: priceSol != null ? priceSol * 1e9 : null, creatorFeeBps })
+    out.set(m, { pool: pools[i].toBase58(), coinCreator: p.coinCreator.toBase58(), poolFeeLamports: buckets.creator.toString(), baseRaw: baseRaw.toString(), quoteLamports: quoteLamports.toString(), virtualQuote: virtualQuote.toString(), priceSol, mcapSol: priceSol != null ? priceSol * 1e9 : null, creatorFeeBps })
   })
   for (const m of mints) {
     const v = out.get(m)
@@ -314,9 +320,13 @@ export async function sharingIxs({ creator, mint, graduated, shareholders }) {
   const c = pk(creator), m = pk(mint)
   // an un-swept curve bucket blocks fee-sharing creation (pump 6095): sweep it into the creator's (coin key's) vault
   // first, in the same tx — the post-lock sweep of the coin key then splits it by the shares like any other old fee
-  const sweep = await curveSweepIxs({ payer: c, mint: m })
+  // a graduated coin's pool bucket blocks it too (pump-amm 6081): sweep the pool as well
+  const sweep = [...await curveSweepIxs({ payer: c, mint: m }), ...(graduated ? await poolSweepIxs({ payer: c, mint: m }) : [])]
   const create = await PUMP_SDK.createFeeSharingConfig({ creator: c, mint: m, pool: graduated ? canonicalPumpPoolPda(m) : null })
   const update = await PUMP_SDK.updateFeeShares({ authority: c, mint: m, currentShareholders: [c], newShareholders: shareholders.map(s => ({ address: pk(s.address), shareBps: s.shareBps })) })
+  // on a complete curve update_fee_shares takes the canonical pool after the shareholders (it checks the pool's
+  // bucket); pump-sdk 2.0.0 predates that account and its update fails on a graduated coin without it
+  if (graduated) update.keys.push({ pubkey: canonicalPumpPoolPda(m), isSigner: false, isWritable: false })
   return [...sweep, create, update]
 }
 
@@ -360,6 +370,56 @@ export function sweepCreatorFeeIx({ payer, mint, creator }) {
     ],
   })
 }
+/* pump-amm's own sweep_creator_fee (same discriminator): the pool's bucket → the coin-creator vault of pool.coin_creator.
+   Pool layout (pump-amm IDL, 2026-10): 8 disc · pool_bump u8 · index u16 · creator · base_mint · quote_mint (75) · lp_mint ·
+   pool_base_token_account · pool_quote_token_account (171) · lp_supply u64 · coin_creator (211) · is_mayhem · is_cashback ·
+   virtual_quote_reserves i128 · creator_fee_bps u64 · can_edit_creator_fee · is_holder_reward · protocol_fees u64 (271) ·
+   creator_fees u64 (279). */
+export const POOL_PROTOCOL_FEES_AT = 271
+export const POOL_CREATOR_FEES_AT = 279
+/** The un-swept { protocol, creator } fee buckets in a pump-amm pool account's data (0 on a pool older than them). Pure. */
+export function poolFeeBuckets(data) {
+  if (!data || data.length < POOL_CREATOR_FEES_AT + 8) return { protocol: 0n, creator: 0n }
+  const b = Buffer.from(data)
+  return { protocol: b.readBigUInt64LE(POOL_PROTOCOL_FEES_AT), creator: b.readBigUInt64LE(POOL_CREATOR_FEES_AT) }
+}
+/** pump-amm sweep_creator_fee of a SOL coin's canonical pool. poolQuote = pool.pool_quote_token_account. Pure. */
+export function sweepPoolCreatorFeeIx({ payer, mint, coinCreator, poolQuote }) {
+  const pool = canonicalPumpPoolPda(pk(mint)), recipient = coinCreatorVaultAuthorityPda(pk(coinCreator))
+  const r = pubkey => ({ pubkey, isSigner: false, isWritable: false })
+  const w = pubkey => ({ pubkey, isSigner: false, isWritable: true })
+  return new TransactionInstruction({
+    programId: PUMP_AMM_PROGRAM_ID,
+    data: SWEEP_CREATOR_FEE_DISC,
+    keys: [
+      { pubkey: pk(payer), isSigner: true, isWritable: true },
+      r(AMM_GLOBAL_CONFIG_PDA),
+      w(pool),
+      r(NATIVE_MINT),
+      r(TOKEN_PROGRAM_ID),
+      w(pk(poolQuote)),
+      r(recipient),
+      w(coinCreatorVaultAtaPda(recipient, NATIVE_MINT, TOKEN_PROGRAM_ID)),
+      r(SystemProgram.programId),
+      r(ASSOCIATED_TOKEN_PROGRAM_ID),
+      r(PUMP_AMM_EVENT_AUTHORITY_PDA),
+      r(PUMP_AMM_PROGRAM_ID),
+    ],
+  })
+}
+/** A graduated SOL coin's un-swept pool creator fee, read now (0 when there is no pool). */
+export async function readPoolFeeBucket(mint) {
+  const info = await getConnection().getAccountInfo(canonicalPumpPoolPda(pk(mint)), 'confirmed')
+  return info ? poolFeeBuckets(info.data).creator : 0n
+}
+/** The pool sweep a graduated coin's tx needs first: [] when there is no pool or its creator bucket is empty. */
+export async function poolSweepIxs({ payer, mint }) {
+  const info = await getConnection().getAccountInfo(canonicalPumpPoolPda(pk(mint)), 'confirmed')
+  if (!info || poolFeeBuckets(info.data).creator === 0n) return []
+  const d = Buffer.from(info.data)
+  if (!new PublicKey(d.subarray(75, 107)).equals(NATIVE_MINT)) throw new Error('the pool creator-fee sweep is built for SOL pools only')
+  return [sweepPoolCreatorFeeIx({ payer, mint, coinCreator: new PublicKey(d.subarray(211, 243)), poolQuote: new PublicKey(d.subarray(171, 203)) })]
+}
 /** A coin's un-swept curve creator fee, read now (lamports; 0 when there is no curve). */
 export async function readCurveFeeBucket(mint) {
   const info = await getConnection().getAccountInfo(bondingCurvePda(pk(mint)), 'confirmed')
@@ -385,7 +445,11 @@ export async function distributeIxs({ mint, sharing, graduated, ammAtaExists = t
   const m = pk(mint)
   // the curve's un-swept creator fee blocks the distribute (pump 6095): sweep it into the config's vault first
   const ixs = [...await curveSweepIxs({ payer: pk(payer), mint: m })]
-  if (graduated && ammAtaExists) ixs.push(await PUMP_SDK.transferCreatorFeesToPumpV2({ payer: pk(payer), mint: m, quoteMint: NATIVE_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID }))
+  // a graduated coin: the pool's bucket → the AMM creator vault (it creates that vault's WSOL ATA if missing), then
+  // the consolidation moves it into the pump vault the distribute pays from
+  const poolSweep = graduated ? await poolSweepIxs({ payer: pk(payer), mint: m }) : []
+  ixs.push(...poolSweep)
+  if (graduated && (ammAtaExists || poolSweep.length)) ixs.push(await PUMP_SDK.transferCreatorFeesToPumpV2({ payer: pk(payer), mint: m, quoteMint: NATIVE_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID }))
   ixs.push(await PUMP_SDK.distributeCreatorFees({ mint: m, sharingConfig: sharing.config, sharingConfigAddress: sharing.address }))
   return ixs
 }
