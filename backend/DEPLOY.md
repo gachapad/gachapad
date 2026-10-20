@@ -15,7 +15,7 @@ Every flag defaults to off. Turn them on one at a time, and watch each one work 
 4. `RIP_LIVE`: buy a pack from the coin's machine when its vault holds the price. The card stays in the vault.
 5. `PULLS_LIVE`: holders can burn the coin to pull a card.
 6. `DELIVER_LIVE`: send each drawn card to its wallet.
-7. `BURN_LIVE`: the burn wallet buys and burns $GACHA.
+7. `BURN_LIVE`: the burn wallet buys and burns $Gachapad.
 
 Kill switch: `touch data/KILL` or `POST /admin/kill`.
 

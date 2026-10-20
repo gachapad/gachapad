@@ -14,7 +14,7 @@ Site: [gachapad.tech](https://www.gachapad.tech)
    | share | goes to |
    |---|---|
    | 80% | the coin's own pool. It is swapped to USDC and buys packs from the coin's machine. |
-   | 20% | the burn wallet. It buys $GACHA and burns it. |
+   | 20% | the burn wallet. It buys $Gachapad and burns it. |
 
 3. **Packs are ripped.** When a coin's vault holds the pack price, the engine buys a pack from that coin's machine. The card goes into the coin's vault wallet and stays there. That is the machine's stock.
 4. **Pull.** A holder burns the coin to pull one card from the stock, and the card is sent to their wallet.
@@ -50,7 +50,7 @@ Site: [gachapad.tech](https://www.gachapad.tech)
 - every card sitting in a coin's vault wallet;
 - every burn;
 - every card sent out;
-- every $GACHA buy-and-burn.
+- every $Gachapad buy-and-burn.
 
 **You trust the operator to run this code.** The engine key derives every coin's pool and vault wallet, so the vaults are custodial. Publishing the code lets you see exactly what the engine does. Every action it takes is a public transaction you can audit against this code.
 
@@ -59,7 +59,7 @@ Public wallets:
 | wallet | address |
 |---|---|
 | engine (derives each coin's pool + vault) | `FhuYdff46JbCnVDStVuh5HkP5CsKH6eLrxXVWw6eQi5u` |
-| burn (buys + burns $GACHA) | `AYW38MBmyP8piAMRooaQjjgKC7nyurJANfzEpp4NVX1E` |
+| burn (buys + burns $Gachapad) | `AYW38MBmyP8piAMRooaQjjgKC7nyurJANfzEpp4NVX1E` |
 | protocol (0% share, required by pump.fun) | `DjNATX9boK9Ta9Ta7agvFgpiWpScgFFGocrzcgsKfrTA` |
 
 The cards are Collector Crypt cards. Each is an NFT backed by a real graded slab (PSA, CGC or BGS) held by Collector Crypt.

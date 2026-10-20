@@ -9,7 +9,7 @@ export const MOCK = env.VITE_MOCK === '1' || env.VITE_MOCK === 'true'
 
 export const BRAND = {
   name: 'Gachapad',
-  ticker: 'GACHA',                                     // the platform coin (shown as $GACHA)
+  ticker: 'Gachapad',                                  // the platform coin's on-chain ticker, exactly as pump.fun shows it ($Gachapad)
   handle: env.VITE_X_HANDLE || '@gachapadtech',        // X handle incl. '@' (empty hides every X link)
   siteUrl: env.VITE_SITE_URL || 'https://www.gachapad.tech',
   siteHost: 'gachapad.tech',
@@ -33,9 +33,9 @@ export const EXPLORER = 'https://solscan.io'
 
 // The mechanic (the engine's /stats and /launch-meta are the source of truth at runtime).
 export const SPLIT = { creator: 0, parentHolders: 80, burn: 20, protocol: 0 } // parentHolders = the coin's OWN machine
-export const ROOT_SPLIT = { burn: 0, protocol: 100 }   // $GACHA's own creator fees go to the team
+export const ROOT_SPLIT = { burn: 0, protocol: 100 }   // $Gachapad's own creator fees go to the team
 export const PULL_MARGIN_PCT = 10                       // a pull costs the machine's average card value + 10%
-export const MAX_DEPTH = 1                              // every coin sits directly under $GACHA
+export const MAX_DEPTH = 1                              // every coin sits directly under $Gachapad
 export const SETUP_SOL = 0.0105                         // fallback only; /launch-meta.setupSol wins
 export const DECIMALS = { SOL: 9, COIN: 6 }
 export const MIN_HOLD = 0

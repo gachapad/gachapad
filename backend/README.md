@@ -1,6 +1,6 @@
 # Gachapad engine
 
-One Node 22 ESM process and one data directory. It launches coins, locks their pump.fun fee sharing, cranks distribution, converts each coin's pool to USDC, rips packs into the coin's vault, runs burn-to-pull and buys and burns $GACHA. Overview and trust model: [`../README.md`](../README.md).
+One Node 22 ESM process and one data directory. It launches coins, locks their pump.fun fee sharing, cranks distribution, converts each coin's pool to USDC, rips packs into the coin's vault, runs burn-to-pull and buys and burns $Gachapad. Overview and trust model: [`../README.md`](../README.md).
 
 | file | what |
 |---|---|
@@ -11,7 +11,7 @@ One Node 22 ESM process and one data directory. It launches coins, locks their p
 | `distribute.js` | The permissionless crank. It books only measured deltas, never an estimate. |
 | `packs.js` + `cc.js` + `gacha.js` | Per-coin machines: Collector Crypt pack purchase, open, card into the coin's vault (`stock`). pump.fun's `gacha-inventory` is read for display only. |
 | `pulls.js` | Burn-to-pull: quote, burn verification, freeze, draw, delivery, `unseen` re-reads, resolve. |
-| `burner.js` | The burn wallet buys $GACHA (curve or PumpSwap, built and simulated by the engine) → `burnChecked`. |
+| `burner.js` | The burn wallet buys $Gachapad (curve or PumpSwap, built and simulated by the engine) → `burnChecked`. |
 | `store.js` | Durable money stores (fsync, fail closed), journals, quarantine. |
 | `index.js` | Express API, SSE, micro-cache, rate limits, admin, loops. |
 

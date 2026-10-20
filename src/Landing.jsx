@@ -1,5 +1,5 @@
 // The home page (#/): the machine window (real slabs from every machine, scrolling), how a machine works, the busiest
-// machines, fresh pulls, the machines you can pick, and $GACHA.
+// machines, fresh pulls, the machines you can pick, and $Gachapad.
 import { useMemo } from 'react'
 import { BRAND, PULL_MARGIN_PCT, splitOf } from './config'
 import { useCoins, useApi, useMachines, useBurnPulls } from './api'
