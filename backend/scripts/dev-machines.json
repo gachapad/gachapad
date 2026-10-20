@@ -1,0 +1,306 @@
+[
+ {
+  "code": "pokemon_25",
+  "name": "Starter Pokémon Gacha Pack",
+  "shortName": "PKMN 25",
+  "category": "Pokemon",
+  "priceUsdc": 25,
+  "buybackPct": 85,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_25/imageNobg-hXc299AMhcvlcvBfPRk5dnueUYcZTG.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_25/videoNobgWeb-pEGYheLsqdcFYhO9xE1Lh9JdpS2wrh.webm",
+  "open": true,
+  "evUsd": 27.47506767310957,
+  "level": "healthy",
+  "stock": {
+   "common": 116,
+   "uncommon": 140,
+   "rare": 176,
+   "epic": 192
+  }
+ },
+ {
+  "code": "pokemon_50",
+  "name": "Elite Pokémon Gacha Pack",
+  "shortName": "PKMN 50",
+  "category": "Pokemon",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_50/imageNobg-XvuRTLlLQdHWJc8wG7EIYmOITBIjQC.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_50/videoNobgWeb-qP0gMmmjOcKDjVJ40ggoAlFPPU5Gks.webm",
+  "open": true,
+  "evUsd": 55.03590074118946,
+  "level": "healthy",
+  "stock": {
+   "common": 216,
+   "uncommon": 139,
+   "rare": 296,
+   "epic": 197
+  }
+ },
+ {
+  "code": "pokemon_100",
+  "name": "Bronze Pokémon Gacha Pack",
+  "shortName": "PKMN 100",
+  "category": "Pokemon",
+  "priceUsdc": 100,
+  "buybackPct": 90,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_100/imageNobg-o8nCQD50o0yg7rc4r6iYSrJuJMDnZ2.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/pokemon_100/videoNobgWeb-SSB7UvgyDqO8y6Kd2sahSjHD0XeVFD.webm",
+  "open": true,
+  "evUsd": 104.93183617944659,
+  "level": "healthy",
+  "stock": {
+   "common": 3766,
+   "uncommon": 2615,
+   "rare": 1429,
+   "epic": 197
+  }
+ },
+ {
+  "code": "onepiece_50",
+  "name": "One Piece Ocean Blue Pack",
+  "shortName": "ONEPIECE 50",
+  "category": "One Piece",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/onepiece_50/imageNobg-WqpFbuPIsLeAiOwTB3ozezhVgNgSrq.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/onepiece_50/videoNobgWeb-UgP9viG3zUweSF0L473KMwaZEjbg2Q.webm",
+  "open": true,
+  "evUsd": 54.995669868385875,
+  "level": "healthy",
+  "stock": {
+   "common": 3296,
+   "uncommon": 3820,
+   "rare": 2349,
+   "epic": 200
+  }
+ },
+ {
+  "code": "sealed_80",
+  "name": "Sealed Gacha Pack",
+  "shortName": "SEALED 80",
+  "category": "Pokemon",
+  "priceUsdc": 80,
+  "buybackPct": 90,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/sealed_80/imageNobg-0mxGfbwxgREZHyv9NlAAXJhakS4Vnt.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/sealed_80/videoNobgWeb-UjKZbsAm0glxIBtu9aTK7Un1zwVu7c.webm",
+  "open": false,
+  "evUsd": 83.08612559849357,
+  "level": "healthy",
+  "stock": {
+   "common": 292,
+   "uncommon": 231,
+   "rare": 195,
+   "epic": 151
+  }
+ },
+ {
+  "code": "anime_75",
+  "name": "Anime Pop Culture Gacha",
+  "shortName": "ANIME 75",
+  "category": "Others",
+  "priceUsdc": 75,
+  "buybackPct": 85,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/anime_75/imageNobg-SSFMM5xnjcbIMIqfPa42R2iGRCiMIT.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/anime_75/videoNobgWeb-SQwwINzehwyQCNnN3eCatZDZoK1OKI.webm",
+  "open": true,
+  "evUsd": 82.4868037025071,
+  "level": "healthy",
+  "stock": {
+   "common": 849,
+   "uncommon": 956,
+   "rare": 629,
+   "epic": 344
+  }
+ },
+ {
+  "code": "comic_25",
+  "name": "Comic 25",
+  "shortName": "COMIC 25",
+  "category": "Others",
+  "priceUsdc": 25,
+  "buybackPct": 85,
+  "image": null,
+  "video": null,
+  "open": true,
+  "evUsd": 25.615452488687787,
+  "level": "healthy",
+  "stock": {
+   "common": 20,
+   "uncommon": 13,
+   "rare": 39,
+   "epic": 17
+  }
+ },
+ {
+  "code": "comic_50",
+  "name": "Comic 50",
+  "shortName": "COMIC 50",
+  "category": "Others",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": null,
+  "video": null,
+  "open": true,
+  "evUsd": 52.534974285124356,
+  "level": "healthy",
+  "stock": {
+   "common": 46,
+   "uncommon": 24,
+   "rare": 154,
+   "epic": 134
+  }
+ },
+ {
+  "code": "lorcana_50",
+  "name": "Lorcana 50",
+  "shortName": "Lorcana 50",
+  "category": "Others",
+  "priceUsdc": 50,
+  "buybackPct": 93,
+  "image": null,
+  "video": null,
+  "open": false,
+  "evUsd": 51.63074042754954,
+  "level": "healthy",
+  "stock": {
+   "common": 240,
+   "uncommon": 202,
+   "rare": 408,
+   "epic": 377
+  }
+ },
+ {
+  "code": "riftbound_50",
+  "name": "Riftbound 50",
+  "shortName": "RFTBND 50",
+  "category": "Others",
+  "priceUsdc": 50,
+  "buybackPct": 93,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/riftbound_50/imageNobg-IC9UY5cqAaVBAMg2LqCNICwBsTuWOg.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/riftbound_50/video-mphzIfHUfkCmDYh5pi8UtGuwF0Rol6.webm",
+  "open": true,
+  "evUsd": 51.25330883927726,
+  "level": "healthy",
+  "stock": {
+   "common": 266,
+   "uncommon": 488,
+   "rare": 330,
+   "epic": 346
+  }
+ },
+ {
+  "code": "dragonball_50",
+  "name": "Dragonball 50",
+  "shortName": "DRGNBLL 50",
+  "category": "Others",
+  "priceUsdc": 50,
+  "buybackPct": 93,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/dragonball_50/imageNobg-JfEttqWaHQSEi7PSoi7L80QQSaBQlp.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/dragonball_50/videoNobgWeb-XRM06Xwo7pFbmnymDbWMXWi0SqDjuu.webm",
+  "open": true,
+  "evUsd": 51.09851113006472,
+  "level": "healthy",
+  "stock": {
+   "common": 197,
+   "uncommon": 396,
+   "rare": 430,
+   "epic": 303
+  }
+ },
+ {
+  "code": "basketball_50",
+  "name": "Basketball Gacha Pack",
+  "shortName": "BASKETBALL 50",
+  "category": "Sports",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": null,
+  "video": null,
+  "open": true,
+  "evUsd": 54.9769048670037,
+  "level": "healthy",
+  "stock": {
+   "common": 501,
+   "uncommon": 203,
+   "rare": 347,
+   "epic": 500
+  }
+ },
+ {
+  "code": "baseball_50",
+  "name": "Baseball Gacha Pack",
+  "shortName": "BASEBALL 50",
+  "category": "Sports",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": null,
+  "video": null,
+  "open": true,
+  "evUsd": 54.978562247134946,
+  "level": "healthy",
+  "stock": {
+   "common": 805,
+   "uncommon": 374,
+   "rare": 692,
+   "epic": 527
+  }
+ },
+ {
+  "code": "football_50",
+  "name": "Football Gacha Pack",
+  "shortName": "FOOTBALL 50",
+  "category": "Sports",
+  "priceUsdc": 50,
+  "buybackPct": 85,
+  "image": null,
+  "video": null,
+  "open": true,
+  "evUsd": 54.969057352604764,
+  "level": "healthy",
+  "stock": {
+   "common": 250,
+   "uncommon": 177,
+   "rare": 500,
+   "epic": 489
+  }
+ },
+ {
+  "code": "soccer_50",
+  "name": "Soccer $50 Pack",
+  "shortName": "SOCCER 50",
+  "category": "Sports",
+  "priceUsdc": 50,
+  "buybackPct": 90,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/soccer_50/imageNobg-VgQXetx0Q4JmBBV7sjATrMkEAW8CUt.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/soccer_50/videoNobgWeb-KAoeyuGBLIzeEuGLsaSlYQ6ALKS3Xb.webm",
+  "open": true,
+  "evUsd": 52.49295776944533,
+  "level": "healthy",
+  "stock": {
+   "common": 141,
+   "uncommon": 177,
+   "rare": 272,
+   "epic": 352
+  }
+ },
+ {
+  "code": "sports_100",
+  "name": "Sports Gacha Pack",
+  "shortName": "SPORTS 100",
+  "category": "Sports",
+  "priceUsdc": 100,
+  "buybackPct": 90,
+  "image": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/sports_100/imageNobg-VYfE61IKI0DrRno2xsIUrSYawDqkn2.png",
+  "video": "https://degwuxynwtb2zaso.public.blob.vercel-storage.com/machines/sports_100/videoNobgWeb-w9wIvZJmvhhxSuu4V7iwq1HGDDBtfm.webm",
+  "open": true,
+  "evUsd": 104.9843126018474,
+  "level": "healthy",
+  "stock": {
+   "common": 1793,
+   "uncommon": 1669,
+   "rare": 762,
+   "epic": 1121
+  }
+ }
+]

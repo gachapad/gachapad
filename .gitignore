@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+backend/data
+backend/data-dev
+backend/wallets.generated.txt
+!backend/.env.dev.example
+.vercel
+.DS_Store

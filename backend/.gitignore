@@ -1,0 +1,9 @@
+node_modules
+.env
+.env.*
+!.env.example
+!.env.dev.example
+data
+data-dev
+wallets.generated.txt
+test-vault.generated.txt
