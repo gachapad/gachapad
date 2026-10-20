@@ -10,10 +10,10 @@ export const MOCK = env.VITE_MOCK === '1' || env.VITE_MOCK === 'true'
 export const BRAND = {
   name: 'Gachapad',
   ticker: 'GACHA',                                     // the platform coin (shown as $GACHA)
-  handle: env.VITE_X_HANDLE || '',                     // X handle incl. '@' — empty until the account is live (hides every X link)
+  handle: env.VITE_X_HANDLE || '@gachapadtech',        // X handle incl. '@' (empty hides every X link)
   siteUrl: env.VITE_SITE_URL || 'https://www.gachapad.tech',
   siteHost: 'gachapad.tech',
-  xUrl: env.VITE_X_URL || '',
+  xUrl: env.VITE_X_URL || 'https://x.com/gachapadtech',
   githubUrl: 'https://github.com/gachapad/gachapad',     // the open-source engine + site
   tagline: 'Every coin gets a gacha machine.',
   sub: 'Its fees rip real graded cards from pump.fun packs into its own machine. Burn the coin to pull one.',
