@@ -14,7 +14,7 @@ import bs58 from 'bs58'
 import { config } from './config.js'
 import { bookDistribution, addGasSpent, isConsumed, readState, patchState } from './store.js'
 import { getConnection, getEngine, engineAddress, protocolAddress, buildTx, simulate, sendAndConfirm, serializeTx, balanceOf, walletKinds, readLamportDeltas, lamportDeltasOf, sol, toLamports, txFeeLamports, rent0, rentLoaded, pk } from './solana.js'
-import { readSharingConfig, readDistributable, distributeIxs, vaultAccounts, feeSharingConfigPda, PUMP_PROGRAM_ID } from './pump.js'
+import { readSharingConfig, readDistributable, distributeIxs, vaultAccounts, feeSharingConfigPda, bondingCurvePda, readCurveFeeBucket, SWEEP_CREATOR_FEE_DISC, PUMP_PROGRAM_ID } from './pump.js'
 import { crankDecision, is6052 } from './math.js'
 import { coins, coinRec, patchCoin, liveOf, setLive, warnEvery } from './registry.js'
 import { isKilled } from './kill.js'
@@ -43,9 +43,21 @@ export function deltasByRole(shares, deltas) {
  */
 export function vaultDropOf(tx, mint) {
   const { curveVault, ammVaultAta } = vaultAccounts(feeSharingConfigPda(pk(mint)))
+  const watch = [curveVault.toBase58(), ammVaultAta.toBase58()]
+  // a sweep_creator_fee of this coin in the same tx first moves the curve's creator-fee bucket into the vault: what
+  // left the curve account then is pump's fee too (a trade in the same tx only makes this drop smaller: conservative)
+  if (sweepsCurveOf(tx, mint)) watch.push(bondingCurvePda(pk(mint)).toBase58())
   let net = 0n
-  for (const d of lamportDeltasOf(tx, [curveVault.toBase58(), ammVaultAta.toBase58()]).values()) net += d
+  for (const d of lamportDeltasOf(tx, watch).values()) net += d
   return net < 0n ? -net : 0n
+}
+/** Does a fetched tx run pump's sweep_creator_fee (top-level) for this mint's curve? Pure. */
+export function sweepsCurveOf(tx, mint) {
+  const msg = tx?.transaction?.message
+  if (!msg || !tx.meta) return false
+  const keys = msg.getAccountKeys({ accountKeysFromLookups: tx.meta.loadedAddresses })
+  const pump = PUMP_PROGRAM_ID.toBase58()
+  return msg.compiledInstructions.some(ix => keys.get(ix.programIdIndex)?.toBase58() === pump && Buffer.from(ix.data).subarray(0, 8).equals(SWEEP_CREATOR_FEE_DISC) && keys.get(ix.accountKeyIndexes[2])?.toBase58() === mint)
 }
 
 /**
@@ -100,7 +112,8 @@ export async function distributeDue({ force = false, only = null } = {}) {
       if (!c.sharing?.address || c.external || c.distributeBlocked) continue
       const l = liveOf(c.mint)
       if (l.sharingOk === false) continue
-      const cached = BigInt(l.vaultLamports || '0') + (l.graduated && l.ammAtaExists ? BigInt(l.ammVaultLamports || '0') : 0n)
+      // + the curve's un-swept creator fee: v3 trades leave it there and the crank sweeps it into the vault first
+      const cached = BigInt(l.vaultLamports || '0') + (l.graduated && l.ammAtaExists ? BigInt(l.ammVaultLamports || '0') : 0n) + BigInt(l.curveFeeLamports || '0')
       if (cached < r0 + minPending) continue // cheap pre-check from the last refresh (no RPC)
       if (!force && (Date.now() - (lastCrankAt.get(c.mint) || 0) < 90_000 || attempts >= 8)) continue
       if (floatOk == null) {
@@ -112,10 +125,10 @@ export async function distributeDue({ force = false, only = null } = {}) {
       try {
         // decide on a LIVE read of both vaults: the refresh figure may be stale (our own last crank, a third party's,
         // a refresh that failed) and a crank of an empty vault still costs a tx fee
-        const v = (await readDistributable([c.mint])).get(c.mint)
+        const [v, bucket] = await Promise.all([readDistributable([c.mint]).then(m => m.get(c.mint)), readCurveFeeBucket(c.mint)])
         const ammAtaExists = !!v?.ammAtaExists
-        const vault = (v?.vaultLamports || 0n) + (l.graduated && ammAtaExists ? v?.amm || 0n : 0n)
-        setLive(c.mint, { vaultLamports: String(v?.vaultLamports || 0n), pendingLamports: String(v?.total || 0n), ammVaultLamports: String(v?.amm || 0n), ammAtaExists })
+        const vault = (v?.vaultLamports || 0n) + (l.graduated && ammAtaExists ? v?.amm || 0n : 0n) + bucket
+        setLive(c.mint, { vaultLamports: String(v?.vaultLamports || 0n), pendingLamports: String((v?.total || 0n) + bucket), ammVaultLamports: String(v?.amm || 0n), ammAtaExists, curveFeeLamports: String(bucket) })
         if (vault < r0 + minPending) continue
         const sharing = await readSharingConfig(c.mint)
         if (!sharing) continue
@@ -142,7 +155,7 @@ export async function distributeDue({ force = false, only = null } = {}) {
         const by = deltas ? deltasByRole(c.shares, deltas) : null
         const booked = by ? bookDistribution(c.mint, sig, by) : false
         const total = by ? by.toParent + by.toLauncher + by.toBurn + by.toProtocol : 0n
-        setLive(c.mint, { pendingLamports: '0', vaultLamports: r0.toString(), ammVaultLamports: '0' })
+        setLive(c.mint, { pendingLamports: '0', vaultLamports: r0.toString(), ammVaultLamports: '0', curveFeeLamports: '0' })
         if (!by) console.warn(`[distribute] $${c.symbol}: crank ${sig} confirmed but the tx is not readable yet — the fee index books it later`)
         else if (!booked) console.warn(`[distribute] $${c.symbol}: crank ${sig} moved NOTHING (pump's minimum not met or someone else cranked first) — nothing booked`)
         else {

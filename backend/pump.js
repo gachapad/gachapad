@@ -8,7 +8,7 @@
 // PARENT's holder pool / 10% burn / 10% protocol; `distributeCreatorFees` is a permissionless crank.
 import BN from 'bn.js'
 import { createRequire } from 'module'
-import { PublicKey, SystemProgram } from '@solana/web3.js'
+import { PublicKey, SystemProgram, TransactionInstruction } from '@solana/web3.js'
 import { NATIVE_MINT, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createCloseAccountInstruction } from '@solana/spl-token'
 import { getConnection, pk, rent0, accountInfos } from './solana.js'
 
@@ -155,7 +155,13 @@ export async function readCurves(mints) {
   for (let i = 0; i < mints.length; i += 100) {
     const chunk = mints.slice(i, i + 100)
     const infos = await conn.getMultipleAccountsInfo(chunk.map(m => bondingCurvePda(pk(m))), 'confirmed')
-    chunk.forEach((m, j) => { try { out.set(m, curveFigures(decodeCurve(infos[j]), global, feeConfig)) } catch (e) { console.warn(`[pump] curve ${m} unreadable: ${String(e.message).slice(0, 80)}`); out.set(m, null) } })
+    chunk.forEach((m, j) => {
+      try {
+        const f = curveFigures(decodeCurve(infos[j]), global, feeConfig)
+        if (f) f.curveFeeLamports = curveCreatorFeeBucket(infos[j]?.data).toString() // creator fees not swept off the curve yet
+        out.set(m, f)
+      } catch (e) { console.warn(`[pump] curve ${m} unreadable: ${String(e.message).slice(0, 80)}`); out.set(m, null) }
+    })
   }
   for (const [m, f] of out) if (f && f.quoteMint !== NATIVE_MINT.toBase58()) out.set(m, await toSolFigures(f))
   return out
@@ -306,9 +312,69 @@ export async function sharingIxs({ creator, mint, graduated, shareholders }) {
   if (shareholders.length < 1 || shareholders.length > 10) throw new Error('1-10 shareholders')
   if (new Set(shareholders.map(s => s.address)).size !== shareholders.length) throw new Error('duplicate shareholder')
   const c = pk(creator), m = pk(mint)
+  // an un-swept curve bucket blocks fee-sharing creation (pump 6095): sweep it into the creator's (coin key's) vault
+  // first, in the same tx — the post-lock sweep of the coin key then splits it by the shares like any other old fee
+  const sweep = await curveSweepIxs({ payer: c, mint: m })
   const create = await PUMP_SDK.createFeeSharingConfig({ creator: c, mint: m, pool: graduated ? canonicalPumpPoolPda(m) : null })
   const update = await PUMP_SDK.updateFeeShares({ authority: c, mint: m, currentShareholders: [c], newShareholders: shareholders.map(s => ({ address: pk(s.address), shareBps: s.shareBps })) })
-  return [create, update]
+  return [...sweep, create, update]
+}
+
+/* ---------------- pump.fun 2026-10: the curve's creator-fee bucket ---------------- */
+// v3 trades (pump.fun's own UI) leave a coin's creator fee ON the curve (BondingCurve.creator_fee) until the
+// permissionless `sweep_creator_fee` pays it into the creator vault of the curve's creator. An un-swept bucket blocks
+// distribute_creator_fees and fee-sharing creation (pump 6095 CreatorFeesNotSwept), so the sweep goes FIRST in the same
+// tx. pump-sdk 2.0.0 predates it: the instruction is built here from pump's IDL (as in @pump-fun/pump-sdk 4.2.0).
+export const SWEEP_CREATOR_FEE_DISC = Buffer.from([32, 246, 191, 52, 8, 201, 73, 186])
+// 8 discriminator + 5 u64 reserves/supply + complete + creator + is_mayhem + is_cashback + quote_mint + creator_fee_bps
+// (u64) + can_edit_creator_fee + is_holder_reward = 125; creator_fee is the u64 there (BONDING_CURVE_SIZE 125 → 141)
+export const CURVE_CREATOR_FEE_AT = 125
+const pumpPda = seeds => PublicKey.findProgramAddressSync(seeds, PUMP_PROGRAM_ID)[0]
+/** The un-swept creator fee in a curve account's data (lamports on a SOL coin); 0 on a curve older than the field. Pure. */
+export function curveCreatorFeeBucket(data) {
+  if (!data || data.length < CURVE_CREATOR_FEE_AT + 8) return 0n
+  return Buffer.from(data).readBigUInt64LE(CURVE_CREATOR_FEE_AT)
+}
+/** pump `sweep_creator_fee` of a SOL coin: the curve's bucket → the creator vault of `creator` (the curve's current creator). Pure. */
+export function sweepCreatorFeeIx({ payer, mint, creator }) {
+  const m = pk(mint), bc = bondingCurvePda(m), recipient = creatorVaultPda(pk(creator))
+  const r = pubkey => ({ pubkey, isSigner: false, isWritable: false })
+  const w = pubkey => ({ pubkey, isSigner: false, isWritable: true })
+  return new TransactionInstruction({
+    programId: PUMP_PROGRAM_ID,
+    data: SWEEP_CREATOR_FEE_DISC,
+    keys: [
+      { pubkey: pk(payer), isSigner: true, isWritable: true },
+      r(pumpPda([Buffer.from('global')])),
+      r(m),
+      r(NATIVE_MINT),
+      r(TOKEN_PROGRAM_ID),
+      r(ASSOCIATED_TOKEN_PROGRAM_ID),
+      r(SystemProgram.programId),
+      w(bc),
+      w(getAssociatedTokenAddressSync(NATIVE_MINT, bc, true, TOKEN_PROGRAM_ID)),
+      w(recipient),
+      w(getAssociatedTokenAddressSync(NATIVE_MINT, recipient, true, TOKEN_PROGRAM_ID)),
+      r(pumpPda([Buffer.from('__event_authority')])),
+      r(PUMP_PROGRAM_ID),
+    ],
+  })
+}
+/** A coin's un-swept curve creator fee, read now (lamports; 0 when there is no curve). */
+export async function readCurveFeeBucket(mint) {
+  const info = await getConnection().getAccountInfo(bondingCurvePda(pk(mint)), 'confirmed')
+  return info ? curveCreatorFeeBucket(info.data) : 0n
+}
+/**
+ * The sweep a tx needs in front of a distribute / a fee-sharing creation: [] when the curve's bucket is empty. Reads the
+ * curve now (the bucket grows with every trade). Only SOL coins: a token-quoted curve is refused, never built wrong.
+ */
+export async function curveSweepIxs({ payer, mint }) {
+  const info = await getConnection().getAccountInfo(bondingCurvePda(pk(mint)), 'confirmed')
+  const bc = decodeCurve(info)
+  if (!bc || curveCreatorFeeBucket(info.data) === 0n) return []
+  if (bc.quoteMint && !bc.quoteMint.equals(PublicKey.default) && !bc.quoteMint.equals(NATIVE_MINT)) throw new Error('the curve creator-fee sweep is built for SOL coins only')
+  return [sweepCreatorFeeIx({ payer, mint, creator: bc.creator })]
 }
 
 /**
@@ -317,7 +383,8 @@ export async function sharingIxs({ creator, mint, graduated, shareholders }) {
  */
 export async function distributeIxs({ mint, sharing, graduated, ammAtaExists = true, payer }) {
   const m = pk(mint)
-  const ixs = []
+  // the curve's un-swept creator fee blocks the distribute (pump 6095): sweep it into the config's vault first
+  const ixs = [...await curveSweepIxs({ payer: pk(payer), mint: m })]
   if (graduated && ammAtaExists) ixs.push(await PUMP_SDK.transferCreatorFeesToPumpV2({ payer: pk(payer), mint: m, quoteMint: NATIVE_MINT, quoteTokenProgram: TOKEN_PROGRAM_ID }))
   ixs.push(await PUMP_SDK.distributeCreatorFees({ mint: m, sharingConfig: sharing.config, sharingConfigAddress: sharing.address }))
   return ixs

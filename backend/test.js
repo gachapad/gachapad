@@ -2127,6 +2127,33 @@ await block('R3#5 the fee index books a third-party distribute_creator_fees_v2 o
   check('R3#5 a V2 crank is booked from its measured deltas (capped by the vault drop)', led.distributedLamports === '20000000' && led.toParentLamports === '8000000' && led.toLauncherLamports === '8000000' && led.cranks === 1, JSON.stringify(led))
 })
 
+await block('R5 pump.fun creator-fee bucket (2026-10): sweep_creator_fee goes first and the bucket counts as fees', async () => {
+  const c = use(fakeConn())
+  const kid = addCoin({ symbol: 'SWEEP', parent: registry.rootMint() })
+  const m = new PublicKey(kid.mint)
+  const data = Buffer.alloc(141); data.writeBigUInt64LE(12345n, pump.CURVE_CREATOR_FEE_AT)
+  check('R5 the curve bucket is read at its IDL offset (125); older/short curves read 0', pump.curveCreatorFeeBucket(data) === 12345n && pump.curveCreatorFeeBucket(Buffer.alloc(125)) === 0n && pump.curveCreatorFeeBucket(null) === 0n)
+  const cfg = pump.feeSharingConfigPda(m), payer = Keypair.generate().publicKey
+  const sw = pump.sweepCreatorFeeIx({ payer, mint: kid.mint, creator: cfg })
+  check('R5 sweep_creator_fee: pump program, IDL discriminator, 13 accounts, payer signs, curve + creator vault writable', sw.programId.equals(pump.PUMP_PROGRAM_ID) && sw.data.equals(pump.SWEEP_CREATOR_FEE_DISC) && sw.keys.length === 13 && sw.keys[0].isSigner && sw.keys[0].pubkey.equals(payer) && sw.keys[2].pubkey.equals(m) && sw.keys[7].pubkey.equals(pump.bondingCurvePda(m)) && sw.keys[7].isWritable && sw.keys[9].pubkey.equals(pump.creatorVaultPda(cfg)) && sw.keys[9].isWritable)
+  // a crank that swept 5M off the curve's bucket and distributed 25M: the vault's NET drop is only 20M
+  const sharingConfig = { shareholders: kid.shares.map(s => ({ address: new PublicKey(s.address), shareBps: s.shareBps })) }
+  const dix = await pump.PUMP_SDK.distributeCreatorFees({ mint: m, sharingConfig, sharingConfigAddress: cfg })
+  const msg = new TransactionMessage({ payerKey: payer, recentBlockhash: bs58.encode(randomBytes(32)), instructions: [sw, dix] }).compileToV0Message()
+  const deltas = new Map([[kid.shares[0].address, 10_000_000], [kid.shares[1].address, 10_000_000], [B, 2_500_000], [P, 2_500_000], [pump.creatorVaultPda(cfg).toBase58(), -20_000_000], [pump.bondingCurvePda(m).toBase58(), -5_000_000]])
+  const keys = msg.staticAccountKeys.map(k => k.toBase58())
+  const pre = keys.map(() => 100_000_000), post = keys.map((k, i) => 100_000_000 + (deltas.get(k) || 0) - (i === 0 ? 5000 : 0))
+  const tx = { meta: { err: null, fee: 5000, preBalances: pre, postBalances: post, loadedAddresses: { writable: [], readonly: [] }, innerInstructions: [] }, transaction: { message: msg } }
+  check('R5 sweepsCurveOf sees a sweep of this coin only', dist.sweepsCurveOf(tx, kid.mint) && !dist.sweepsCurveOf(tx, Keypair.generate().publicKey.toBase58()))
+  check('R5 the drop includes what the sweep took off the curve (25M, not the vault\'s net 20M)', dist.vaultDropOf(tx, kid.mint) === 25_000_000n, String(dist.vaultDropOf(tx, kid.mint)))
+  const sig = bs58.encode(randomBytes(64))
+  c.txMeta.set(sig, tx)
+  indexOver(c, [sig])
+  await dist.indexDistributions({ force: true })
+  const led = store.mintLedger(kid.mint)
+  check('R5 the fee index books the whole 25M of a sweep + distribute crank', led.distributedLamports === '25000000' && led.toParentLamports === '10000000' && led.cranks === 1, JSON.stringify(led))
+})
+
 await block('R3#6 the fee index reads version-1 transactions instead of skipping them', async () => {
   const c = use(fakeConn())
   const kid = addCoin({ symbol: 'IDXT1', parent: registry.rootMint() })

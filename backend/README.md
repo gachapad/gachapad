@@ -28,6 +28,7 @@ Mainnet dry runs simulate only and send nothing. They use throwaway keys and `RP
 - `scripts/canary.mjs`
 - `scripts/dryrun-launch.mjs`, `scripts/dryrun-lock.mjs`, `scripts/dryrun-distribute.mjs`, `scripts/dryrun-swap.mjs`, `scripts/dryrun-burn.mjs`
 - `scripts/dryrun-pull.mjs <mint> <holder> <tokens>`
+- `scripts/dryrun-sweep.mjs <mint>`: pump.fun's `sweep_creator_fee` (the curve's creator-fee bucket, which must be swept before a distribute or a fee-sharing lock)
 - `scripts/probe-packs.mjs`
 
 ## Money rules
