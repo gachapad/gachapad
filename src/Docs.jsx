@@ -78,7 +78,7 @@ export function Docs({ stats }) {
         <h2 id="fairness">How the card is picked</h2>
         <p>When your burn is confirmed, the engine writes down the list of cards in the machine and its hash, and picks a Solana slot about 40 slots ahead. The card is picked from the first finalized block at or after that slot:</p>
         <p className="code">seed = sha256(blockhash | pull id | burn signature | list hash)<br />eligible = the locked list, minus cards that earlier pulls of this coin took<br />card = eligible[seed mod n]</p>
-        <p>The list is fixed before the seed block exists, so nobody, {BRAND.name} included, can know or choose your card. Every pull&apos;s page shows the list, the hash, the block and the seed so anyone can recompute it.</p>
+        <p>The list is fixed before the seed block exists, so nobody, {BRAND.name} included, can know or choose your card. Every pull&apos;s page shows the list, the hash, the block and the seed so anyone can recompute it with <a href={`${BRAND.githubUrl}/blob/main/backend/pulls.js`} target="_blank" rel="noreferrer">the same code the engine runs</a>.</p>
 
         <h2 id="token">${T}</h2>
         <p>{split.burn}% of every coin&apos;s creator fees buys ${T} and burns it, on the curve and after graduation. ${T} is a plain pump.fun coin: no mint authority, no freeze authority.</p>
@@ -86,6 +86,7 @@ export function Docs({ stats }) {
 
         <h2 id="trust">What you are trusting</h2>
         <ul>
+          <li><b>Open source:</b> the engine and this site are public at <a href={BRAND.githubUrl} target="_blank" rel="noreferrer">github.com/gachapad/gachapad</a>. You can read exactly what the engine signs, check every rule below against the code and run its tests.</li>
           <li><b>On-chain and locked:</b> every coin&apos;s fee split (pump.fun fee sharing, admin revoked). Anyone can read it.</li>
           <li><b>Held by {BRAND.name}&apos;s engine:</b> each coin&apos;s pool and card vault are wallets whose keys the engine derives from one secret. The engine is coded to sign only three kinds of transaction with them: a USDC swap into the vault, a Collector Crypt pack payment of exactly the pack price, and a card transfer to a wallet that burned for it. That is code you trust, not a contract.</li>
           <li><b>Collector Crypt:</b> the packs, the cards and their insured values are Collector Crypt&apos;s. Their API is not public and can change or close; a closed machine just stops filling.</li>

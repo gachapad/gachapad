@@ -215,6 +215,7 @@ function Footer({ stats, health, healthErr }) {
           <h4>Elsewhere</h4>
           <ul>
             <li><a href={`https://${BRAND.siteHost}`} target="_blank" rel="noreferrer">{BRAND.siteHost}</a></li>
+            <li><a href={BRAND.githubUrl} target="_blank" rel="noreferrer">Source code on GitHub</a></li>
             {BRAND.xUrl && <li><a href={BRAND.xUrl} target="_blank" rel="noreferrer">{BRAND.handle} on X</a></li>}
             {stats?.root && <li><a href={stats.root.pumpUrl || PUMP_URL(stats.root.mint)} target="_blank" rel="noreferrer">${stats.root.symbol} on pump.fun</a></li>}
           </ul>
@@ -302,7 +303,7 @@ export default function App() {
               <a className="btn primary block rail-launch" href="#/launch">{Icon.plus} launch a coin</a>
               <div className="rail-foot">
                 <EngineDot stats={stats} health={health} healthErr={healthErr} />
-                <span>{BRAND.xUrl ? <><a href={BRAND.xUrl} target="_blank" rel="noreferrer">{BRAND.handle}</a> · </> : null}<a href="#/docs">how it works</a></span>
+                <span>{BRAND.xUrl ? <><a href={BRAND.xUrl} target="_blank" rel="noreferrer">{BRAND.handle}</a> · </> : null}<a href="#/docs">how it works</a> · <a href={BRAND.githubUrl} target="_blank" rel="noreferrer">GitHub</a></span>
               </div>
             </aside>
           )}
@@ -313,6 +314,7 @@ export default function App() {
                 <Search compact={!wide} />
                 <div className="top-right">
                   {wide && <PriceChips stats={stats} />}
+                  <a className="iconlink gh-link" href={BRAND.githubUrl} target="_blank" rel="noreferrer" aria-label="Open source on GitHub" data-tip="open source">{Icon.github}</a>
                   <WalletChip />
                 </div>
               </div>

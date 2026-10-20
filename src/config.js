@@ -14,6 +14,7 @@ export const BRAND = {
   siteUrl: env.VITE_SITE_URL || 'https://www.gachapad.tech',
   siteHost: 'gachapad.tech',
   xUrl: env.VITE_X_URL || '',
+  githubUrl: 'https://github.com/gachapad/gachapad',     // the open-source engine + site
   tagline: 'Every coin gets a gacha machine.',
   sub: 'Its fees rip real graded cards from pump.fun packs into its own machine. Burn the coin to pull one.',
 }

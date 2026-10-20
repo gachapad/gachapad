@@ -489,3 +489,7 @@ body { background: var(--bg); }
 .pump-grid li { color: var(--ink-2); line-height: 1.6; font-size: 14.5px; }
 .pump-grid li b { color: var(--ink); font-weight: 500; }
 @media (max-width: 760px) { .pump-hero { grid-template-columns: 1fr; } .pump-hero img { width: 100%; height: auto; } .pump-grid { grid-template-columns: 1fr; } .pump-grid > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); } }
+
+/* GitHub link in the topbar (open source) */
+.top-right .gh-link { width: 36px; height: 36px; color: var(--ink-2); }
+.top-right .gh-link svg { width: 17px; height: 17px; }
